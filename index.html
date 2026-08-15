@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>48시간 장감옥 | 48H Spending Jail v0.3</title>
+<style>
+  :root{
+    --bg:#17191d;
+    --panel:#22262c;
+    --panel2:#2b3037;
+    --line:#555d68;
+    --text:#f2f3f5;
+    --muted:#aeb4bd;
+    --danger:#e05d5d;
+    --warn:#e0a85d;
+    --good:#8fc98f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#121418,#1a1d22);
+    color:var(--text);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 56px}
+  .hero{
+    border:1px solid #3c424b;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 36px, rgba(255,255,255,.035) 36px 40px),
+      #1d2126;
+    border-radius:20px;
+    padding:22px 20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.28);
+  }
+  .kicker{font-size:12px;letter-spacing:.16em;color:#b8bec7;text-transform:uppercase}
+  h1{margin:6px 0 6px;font-size:30px}
+  .subtitle{margin:0;color:var(--muted);line-height:1.5}
+  .quote{
+    margin-top:16px;padding:12px 14px;border-left:4px solid #737c89;
+    background:#20242a;border-radius:10px;color:#d8dde3;font-weight:700
+  }
+  .summary{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0
+  }
+  .stat{
+    background:#15181c;border:1px solid #353b43;border-radius:14px;padding:14px
+  }
+  .stat small{color:var(--muted)}
+  .stat strong{display:block;font-size:22px;margin-top:3px}
+  .stat span{display:block;min-height:18px;margin-top:5px;color:#8f97a2;font-size:11px;line-height:1.35}
+  .section{margin-top:18px}
+  .panel{
+    background:var(--panel);border:1px solid #3b424c;border-radius:18px;padding:16px
+  }
+  .panel h2{font-size:17px;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input,select{
+    width:100%;background:#16191d;color:var(--text);border:1px solid #464e59;
+    border-radius:11px;padding:12px 13px;font-size:15px;outline:none
+  }
+  input:focus,select:focus{border-color:#7a8492}
+  button{
+    border:0;border-radius:11px;padding:12px 14px;font-weight:800;cursor:pointer
+  }
+  .primary{background:#d1d5db;color:#15171a;width:100%;margin-top:12px}
+  .primary:hover{filter:brightness(.95)}
+  .secondary{background:#313841;color:#e4e8ec;width:100%;margin-top:12px;border:1px solid #59636f}
+  .secondary:hover{filter:brightness(1.08)}
+  .asset-preview{
+    display:flex;flex-direction:column;justify-content:center;min-height:76px;
+    padding:12px 13px;border:1px dashed #59616d;border-radius:11px;background:#1a1d22
+  }
+  .asset-preview small{color:var(--muted)}
+  .asset-preview strong{margin-top:3px;font-size:16px}
+  .asset-preview span{margin-top:4px;color:#9ca4ae;font-size:12px;line-height:1.4}
+  .list{display:grid;gap:12px;margin-top:12px}
+  .empty{color:var(--muted);text-align:center;padding:28px 10px}
+  .card{
+    position:relative;overflow:hidden;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 34px, rgba(255,255,255,.04) 34px 38px),
+      var(--panel2);
+    border:1px solid #49515c;border-radius:16px;padding:15px
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 30%)
+  }
+  .top{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+  .name{font-size:18px;font-weight:900;line-height:1.3}
+  .price{font-size:18px;font-weight:900;white-space:nowrap}
+  .meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .badge{
+    font-size:12px;padding:6px 8px;border-radius:999px;background:#181b20;border:1px solid #434b56;color:#cbd1d8
+  }
+  .timer{
+    margin-top:12px;padding:11px 12px;background:#181b20;border:1px dashed #59616d;border-radius:10px;
+    font-variant-numeric:tabular-nums;font-weight:900
+  }
+  .timer.ready{border-color:#7aa17a;color:#bde4bd}
+  .timer.bought{border-color:#a65e5e;color:#ffb9b9}
+  .timer.gone{border-color:#767e89;color:#c8ccd2}
+  .impact{
+    margin-top:9px;padding:9px 10px;border-radius:10px;background:#1b2025;
+    border:1px solid #3b444e;color:#cbd2da;font-size:12px;line-height:1.45
+  }
+  .impact strong{color:#f0f2f4}
+  .impact.over{border-color:#965e5e;color:#ffc1c1}
+  .bypass{
+    margin-top:9px;padding:10px 11px;border-radius:10px;background:#251d1d;
+    border:1px solid #6f4646;color:#ffd0d0;font-size:12px;line-height:1.5
+  }
+  .bypass strong{color:#fff0f0}
+  .ratingBox{
+    margin-top:9px;padding:10px 11px;border-radius:10px;background:#1d2229;
+    border:1px solid #46505f;color:#e9eef6;font-size:12px;line-height:1.5
+  }
+  .ratingBox .stars{font-size:18px;letter-spacing:1px}
+  .ratingBox button{
+    margin-top:7px;padding:7px 10px;border-radius:8px;border:1px solid #596474;
+    background:#2a313b;color:#fff;cursor:pointer;font-weight:700
+  }
+  .actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+  .btn-pass{background:#314235;color:#d9f0dd}
+  .btn-buy{background:#4a2e2e;color:#ffd3d3}
+  .btn-del{background:#343a42;color:#d6dbe1}
+  .small-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+  .footer{margin-top:18px;text-align:center;color:#777f89;font-size:12px}
+  @media (max-width:560px){
+    .grid,.summary{grid-template-columns:1fr}
+    .actions{grid-template-columns:1fr}
+    h1{font-size:26px}
+  }
+
+  .selfReportBtn{
+    width:100%;margin-top:10px;padding:12px 14px;border-radius:12px;
+    border:1px solid #7a4d4d;background:#3a2528;color:#ffe9e9;
+    font-weight:800;cursor:pointer
+  }
+  .selfReportTag{
+    display:inline-block;margin-top:6px;padding:3px 7px;border-radius:999px;
+    background:#4a2b2f;border:1px solid #7b4a50;color:#ffd9dd;font-size:11px;font-weight:800
+  }
+
+  .thoughtBox{
+    margin-top:8px;padding:9px 10px;border-radius:10px;background:#20242b;
+    border:1px solid #4d5663;color:#e8edf4;font-size:12px;line-height:1.5
+  }
+  .thoughtBox strong{color:#fff}
+
+  .emergencyBtn{
+    width:100%;margin-top:10px;padding:13px 14px;border-radius:12px;
+    border:1px solid #8d5a23;background:#3b2c1f;color:#ffe6bd;
+    font-weight:900;cursor:pointer
+  }
+  .emergencyTag{
+    display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;
+    background:#4a351d;border:1px solid #8c642d;color:#ffe0a6;
+    font-size:11px;font-weight:900
+  }
+
+  .ratingSlider{width:100%;margin-top:8px}
+  .ratingValue{font-size:22px;font-weight:900}
+  .ratingScale{display:flex;justify-content:space-between;font-size:10px;opacity:.65;margin-top:2px}
+</style>
+</head>
+<body><div style="margin-top:10px;padding:8px 10px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;opacity:.75">
+v0.3 · GitHub 배포판 — 48시간 수감 / 긴급체포 / 자수 / 결제 직전 생각 / 결제수단 / 돈값 만족도
+</div>
+<div class="wrap">
+  <section class="hero">
+    <div class="kicker">Impulse Detention System</div>
+    <h1>48시간 장감옥 <span style="font-size:14px;color:#8f97a2">v0.3</span></h1>
+    <p class="subtitle">충동구매 현행범을 48시간 수감합니다.</p>
+    <div class="quote">“사고 싶은 건 가둔다. 돈은 풀어두지 않는다.”</div>
+
+    <div class="summary">
+      <div class="stat">
+        <small>전재산 기준</small>
+        <strong id="assetTotal">미등록</strong>
+        <span id="assetTotalSub">아래에서 현재 가진 돈을 적어주세요</span>
+      </div>
+      <div class="stat">
+        <small>현재 남은 돈</small>
+        <strong id="availableTotal">—</strong>
+        <span id="availableSub">탈옥 기록을 반영해 계산합니다</span>
+      </div>
+      <div class="stat">
+        <small>현재 수감액</small>
+        <strong id="detainedTotal">0원</strong>
+        <span id="detainedSub">전재산 기준을 넣으면 비율을 보여줘요</span>
+      </div>
+      <div class="stat">
+        <small>지킨 돈</small>
+        <strong id="savedTotal">0원</strong>
+        <span>석방 포기로 지킨 누적 금액</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <h2>전재산 기준</h2>
+    <div class="grid">
+      <div>
+        <label for="assetInput">현재 쓸 수 있는 전재산</label>
+        <input id="assetInput" type="number" min="0" step="1000" inputmode="numeric" placeholder="예: 350000" />
+      </div>
+      <div class="asset-preview">
+        <small>지금 수감 중인 금액</small>
+        <strong id="assetPreviewMain">전재산을 등록해 주세요</strong>
+        <span id="assetPreviewSub">저장 후 물건 하나를 샀을 때의 남은 돈도 보여줍니다.</span>
+      </div>
+    </div>
+    <button class="secondary" id="saveAssetsBtn">전재산 저장</button>
+    <div class="small-note">통장·현금 등 지금 실제로 쓸 수 있는 돈을 합쳐 적어주세요. 저장 뒤 “탈옥함(샀음)”으로 기록한 실제 청구액을 방어자금에서 자동으로 뺍니다. 휴대폰 결제도 다음 통신요금으로 빠질 돈이므로 동일하게 반영합니다. 실제 잔액이 달라지면 이 값을 다시 저장하면 됩니다.</div>
+  </section>
+
+  <section class="section panel">
+    <h2>새로운 현행범 수감</h2>
+    <div class="grid">
+      <div class="full">
+        <label for="name">상품명</label>
+        <input id="name" placeholder="예: 한정 가챠 패키지" />
+      </div>
+      <div>
+        <label for="price">가격</label>
+        <input id="price" type="number" min="0" step="100" placeholder="44000" />
+      </div>
+      <div>
+        <label for="deadline">이벤트 종료일</label>
+        <input id="deadline" type="datetime-local" />
+      </div>
+      <div class="full">
+        <label for="purpose">이 돈은 무엇을 지키는 돈?</label>
+        <select id="purpose">
+          <option>생활비</option>
+          <option>교통비</option>
+          <option>비상금</option>
+          <option>저축</option>
+          <option value="기타">기타(직접 입력)</option>
+        </select>
+      </div>
+      <div class="full" id="customPurposeWrap" style="display:none">
+        <label for="customPurpose">기타 사유</label>
+        <input id="customPurpose" placeholder="예: 다음 달 고정비, 비상시에 쓸 돈, 꼭 남겨두고 싶은 돈" />
+      </div>
+      <div class="full">
+        <label for="preThought">결제 직전 생각 <span style="opacity:.65;font-weight:400">(선택)</span></label>
+        <input id="preThought" placeholder="예: 아직 30만 원대니까 괜찮아" />
+      </div>
+    </div>
+    <button class="primary" id="addBtn">수감시키기</button>
+    <div class="small-note">수감 시각부터 48시간 동안 “구매 금지” 상태가 유지됩니다. 48시간 후에도 자동 구매 허용이 아니라, 다시 판단 가능한 상태로만 바뀝니다.</div>
+  </section>
+
+  <section class="section panel">
+    <h2>수감자 명단</h2>
+    <button class="emergencyBtn" onclick="emergencyArrest()">지금 사고 싶다면 긴급체포</button>
+<div style="margin-top:6px;font-size:11px;opacity:.75">고민 중인 소비를 최소 입력만 받고 즉시 48시간 수감합니다.</div>
+<button class="selfReportBtn" onclick="selfReport()">이미 사버렸다면 자수하기</button><div style="margin-top:6px;font-size:11px;opacity:.75">감옥에 넣기 전에 이미 결제했다면 자수로 바로 기록합니다.</div>
+<div id="list" class="list"></div>
+  </section>
+
+  <div class="footer">데이터는 이 브라우저에만 저장됩니다 · localStorage 사용</div>
+</div>
+
+<script>
+const KEY = 'janggamok_v01_items';
+const ASSET_KEY = 'janggamok_v02_asset_state';
+let items = JSON.parse(localStorage.getItem(KEY) || '[]');
+let assetState = loadAssetState();
+
+const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
+const save = () => localStorage.setItem(KEY, JSON.stringify(items));
+
+function loadAssetState(){
+  try{
+    const saved = localStorage.getItem(ASSET_KEY);
+    if(!saved) return null;
+    const state = JSON.parse(saved);
+    const total = Number(state.total);
+    const setAt = Number(state.setAt);
+    if(!Number.isFinite(total) || total < 0 || !Number.isFinite(setAt)) return null;
+    return { total, setAt };
+  } catch {
+    return null;
+  }
+}
+
+function saveAssetState(){
+  if(assetState) localStorage.setItem(ASSET_KEY, JSON.stringify(assetState));
+  else localStorage.removeItem(ASSET_KEY);
+}
+
+function walletInfo(){
+  if(!assetState) return { registered:false, total:0, spent:0, available:0 };
+  const spent = items
+    .filter(x => x.status === 'bought' && Number(x.boughtAt || 0) >= assetState.setAt)
+    .reduce((sum, x) => sum + Number(x.actualCharge ?? x.price ?? 0), 0);
+  return {
+    registered:true,
+    total:assetState.total,
+    spent,
+    available:assetState.total - spent
+  };
+}
+
+function percentText(amount, base){
+  if(!(base > 0)) return '';
+  const percentage = Math.round((Number(amount || 0) / base) * 1000) / 10;
+  return `${percentage.toLocaleString('ko-KR')}%`;
+}
+
+function escapeHtml(s=''){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function remainingText(createdAt){
+  const end = createdAt + 48*60*60*1000;
+  const diff = end - Date.now();
+  if(diff <= 0) return {text:'가석방 심사 가능 · 다시 판단해도 됨', cls:'ready'};
+  const h = Math.floor(diff/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  return {text:`수감 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} 남음`, cls:''};
+}
+
+function itemImpact(item, wallet){
+  if(!wallet.registered || item.status !== 'detained') return '';
+  const left = wallet.available - Number(item.price || 0);
+  const percentage = percentText(item.price, wallet.available);
+  const detail = percentage ? ` · 현재 남은 돈의 ${percentage}` : ' · 현재 남은 돈을 넘김';
+  return `<div class="impact${left < 0 ? ' over' : ''}">이걸 사면 남는 돈 <strong>${fmt(left)}</strong>${detail}</div>`;
+}
+
+function paymentNote(item){
+  if(item.status !== 'bought' || !item.paymentMethod) return '';
+  const charge = Number(item.actualCharge ?? item.price ?? 0);
+  const phoneNote = item.paymentMethod === '휴대폰 결제'
+    ? `<br>${won(charge)}은 다음 통신요금에 청구될 돈으로 잡아둡니다.`
+    : '';
+  return `<div class="bypass"><strong>결제수단: ${escapeHtml(item.paymentMethod)}</strong>${phoneNote}</div>`;
+}
+
+
+
+function emergencyArrest(){
+  const nameRaw = prompt('긴급체포할 항목은 무엇인가요?\n예: 9,900원 패키지, 굿즈, 카페');
+  if(nameRaw === null) return;
+  const name = nameRaw.trim();
+  if(!name) return alert('항목 이름을 입력해 주세요.');
+
+  const priceRaw = prompt('가격은 얼마인가요? 숫자만 입력해 주세요.');
+  if(priceRaw === null) return;
+  const price = Number(String(priceRaw).replace(/[^\d.]/g,''));
+  if(!Number.isFinite(price) || price < 0){
+    return alert('금액을 숫자로 입력해 주세요.');
+  }
+
+  let preThought = prompt(
+    '지금 결제 직전 무슨 생각이 들었나요? (선택)\n예: 아직 30만 원대니까 괜찮아 / 이번 한 번만',
+    ''
+  );
+  if(preThought === null) preThought = '';
+
+  const createdAt = Date.now();
+  const item = {
+    id: 'emg_' + createdAt + '_' + Math.random().toString(36).slice(2,8),
+    name,
+    price,
+    purpose: '긴급체포',
+    customPurpose: '',
+    deadline: '',
+    createdAt,
+    status: 'detained',
+    preThought: preThought.trim(),
+    emergencyArrest: true
+  };
+
+  items.unshift(item);
+  save();
+  render();
+  alert('긴급체포 완료. 지금부터 48시간 수감합니다.');
+}
+
+function selfReport(){
+  const nameRaw = prompt('무엇을 샀나요?\n예: 만화카페, 게임 패키지, 간식');
+  if(nameRaw === null) return;
+  const name = nameRaw.trim();
+  if(!name) return alert('항목 이름을 입력해 주세요.');
+
+  const priceRaw = prompt('실제로 쓴 금액은 얼마인가요? 숫자만 입력해 주세요.');
+  if(priceRaw === null) return;
+  const actualCharge = Number(String(priceRaw).replace(/[^\d.]/g,''));
+  if(!Number.isFinite(actualCharge) || actualCharge < 0){
+    return alert('금액을 숫자로 입력해 주세요.');
+  }
+
+  const methodRaw = prompt(
+    '결제수단을 골라 주세요.\n1. 카드\n2. 계좌\n3. 휴대폰 결제\n4. 상품권·포인트\n5. 기타',
+    '1'
+  );
+  if(methodRaw === null) return;
+
+  const methodMap = {'1':'카드','2':'계좌','3':'휴대폰 결제','4':'상품권·포인트','5':'기타'};
+  const paymentMethod = methodMap[methodRaw.trim()] || methodRaw.trim() || '기타';
+
+  let preThought = prompt(
+    '결제 직전에 어떤 생각이 들었나요? (선택)\n예: 아직 30만 원대니까 괜찮아 / 10연이면 될 것 같아',
+    ''
+  );
+  if(preThought === null) preThought = '';
+
+  const now = Date.now();
+  const item = {
+    id: 'self_' + now + '_' + Math.random().toString(36).slice(2,8),
+    name,
+    price: actualCharge,
+    actualCharge,
+    createdAt: now,
+    boughtAt: now,
+    status: 'bought',
+    paymentMethod,
+    preThought: preThought.trim(),
+    selfReported: true
+  };
+
+  items.unshift(item);
+  save();
+  render();
+
+  setTimeout(() => {
+    if(confirm('자수 완료. 돈값 만족도를 남길까요?')){
+      rateItem(item.id);
+    }
+  }, 0);
+}
+
+function emergencyTag(item){
+  return item.emergencyArrest ? '<span class="emergencyTag">긴급체포</span>' : '';
+}
+
+function thoughtNote(item){
+  if(!item.preThought) return '';
+  return `<div class="thoughtBox"><strong>결제 직전 생각</strong><br>${escapeHtml(item.preThought)}</div>`;
+}
+
+function ratingLabel(n){
+  if(n >= 85) return '매우 만족';
+  if(n >= 65) return '만족';
+  if(n >= 40) return '보통';
+  if(n >= 20) return '아쉬움';
+  return '후회';
+}
+
+function ratingNote(item){
+  if(item.status !== 'bought') return '';
+  const has = Number.isFinite(Number(item.rating));
+  const value = has ? Math.max(0, Math.min(100, Number(item.rating))) : 50;
+  const memo = item.ratingMemo ? `<br>메모: ${escapeHtml(item.ratingMemo)}` : '';
+  return `<div class="ratingBox">
+    <div><strong>돈값 만족도</strong></div>
+    <div class="ratingValue">${has ? value : '—'}</div>
+    <input class="ratingSlider" type="range" min="0" max="100" step="1" value="${value}"
+      onchange="saveRatingFromSlider('${item.id}', this.value)">
+    <div class="ratingScale"><span>0 후회</span><span>50 보통</span><span>100 매우 만족</span></div>
+    <div style="margin-top:5px">${has ? ratingLabel(value) : '막대를 움직이면 저장됩니다.'}${memo}</div>
+    <button onclick="editRatingMemo('${item.id}')">메모 수정</button>
+  </div>`;
+}
+
+function saveRatingFromSlider(id, value){
+  const x = items.find(i=>i.id===id);
+  if(!x || x.status !== 'bought') return;
+  x.rating = Math.max(0, Math.min(100, Number(value)));
+  save();
+  render();
+}
+
+function editRatingMemo(id){
+  const x = items.find(i=>i.id===id);
+  if(!x || x.status !== 'bought') return;
+  let memo = prompt('한 줄 메모를 남길까요? (선택)', x.ratingMemo || '');
+  if(memo === null) return;
+  x.ratingMemo = memo.trim();
+  save();
+  render();
+}
+
+function rateItem(id){
+  const x = items.find(i=>i.id===id);
+  if(!x || x.status !== 'bought') return;
+  if(!Number.isFinite(Number(x.rating))) x.rating = 50;
+  save();
+  render();
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const wallet = walletInfo();
+  if(!items.length){
+    list.innerHTML = '<div class="empty">현재 수감자가 없습니다.<br>사고 싶은 것이 생기면 여기부터 들르세요.</div>';
+  } else {
+    list.innerHTML = items.map(item => {
+      let timer = remainingText(item.createdAt);
+      if(item.status === 'bought') timer = {text:'탈옥함 · 구매 완료', cls:'bought'};
+      if(item.status === 'passed') timer = {text:'영구 석방 · 구매 포기', cls:'gone'};
+      const deadline = item.deadline ? new Date(item.deadline).toLocaleString('ko-KR') : '미설정';
+      const impact = itemImpact(item, wallet);
+      const payNote = paymentNote(item);
+      const rating = ratingNote(item);
+      const thought = thoughtNote(item);
+      const emergency = emergencyTag(item);
+      return `
+        <article class="card">
+          <div class="top">
+            <div class="name">${escapeHtml(item.name)} ${emergency}${item.selfReported ? '<span class="selfReportTag">자수</span>' : ''}</div>
+            <div class="price">${fmt(item.price)}</div>
+          </div>
+          <div class="meta">
+            <span class="badge">보호 대상: ${escapeHtml(item.purpose)}</span>
+            <span class="badge">종료: ${escapeHtml(deadline)}</span>
+          </div>
+          <div class="timer ${timer.cls}">${timer.text}</div>
+          ${impact}
+          ${thought}
+          ${payNote}
+          ${rating}
+          <div class="actions">
+            <button class="btn-pass" onclick="markPassed('${item.id}')">석방 포기</button>
+            <button class="btn-buy" onclick="markBought('${item.id}')">탈옥함(샀음)</button>
+            <button class="btn-del" onclick="removeItem('${item.id}')">기록 말소</button>
+          </div>
+        </article>`;
+    }).join('');
+  }
+
+  const detained = items
+    .filter(x => x.status === 'detained')
+    .reduce((a,b)=>a+Number(b.price||0),0);
+  const saved = items
+    .filter(x => x.status === 'passed')
+    .reduce((a,b)=>a+Number(b.price||0),0);
+
+  const assetTotal = document.getElementById('assetTotal');
+  const assetTotalSub = document.getElementById('assetTotalSub');
+  const availableTotal = document.getElementById('availableTotal');
+  const availableSub = document.getElementById('availableSub');
+  const detainedSub = document.getElementById('detainedSub');
+  const assetPreviewMain = document.getElementById('assetPreviewMain');
+  const assetPreviewSub = document.getElementById('assetPreviewSub');
+  const assetInput = document.getElementById('assetInput');
+
+  document.getElementById('detainedTotal').textContent = fmt(detained);
+  document.getElementById('savedTotal').textContent = fmt(saved);
+
+  if(wallet.registered){
+    const detainedRatio = percentText(detained, wallet.available);
+    const afterAllEscape = wallet.available - detained;
+    assetTotal.textContent = fmt(wallet.total);
+    assetTotalSub.textContent = '저장 시점의 기준 금액';
+    availableTotal.textContent = fmt(wallet.available);
+    availableSub.textContent = wallet.spent ? `탈옥 기록 ${fmt(wallet.spent)} 반영` : '아직 탈옥 기록 없음';
+    detainedSub.textContent = detainedRatio
+      ? `현재 남은 돈의 ${detainedRatio} 수감 중`
+      : '현재 남은 돈이 없어 비율 계산 불가';
+    assetPreviewMain.textContent = detainedRatio
+      ? `현재 남은 돈의 ${detainedRatio} 수감 중`
+      : '현재 남은 돈을 넘긴 수감액';
+    assetPreviewSub.textContent = `수감자를 모두 사면 ${fmt(afterAllEscape)} 남음`;
+    if(document.activeElement !== assetInput) assetInput.value = String(wallet.total);
+  } else {
+    assetTotal.textContent = '미등록';
+    assetTotalSub.textContent = '아래에서 현재 가진 돈을 적어주세요';
+    availableTotal.textContent = '—';
+    availableSub.textContent = '전재산 저장 후 계산합니다';
+    detainedSub.textContent = '전재산 기준을 넣으면 비율을 보여줘요';
+    assetPreviewMain.textContent = '전재산을 등록해 주세요';
+    assetPreviewSub.textContent = '저장 후 물건 하나를 샀을 때의 남은 돈도 보여줍니다.';
+    if(document.activeElement !== assetInput) assetInput.value = '';
+  }
+}
+
+function addItem(){
+  const name = document.getElementById('name').value.trim();
+  const price = Number(document.getElementById('price').value);
+  const deadlineVal = document.getElementById('deadline').value;
+  const purposeSelect = document.getElementById('purpose').value;
+  const customPurpose = document.getElementById('customPurpose').value.trim();
+  const preThought = document.getElementById('preThought').value.trim();
+  const purpose = purposeSelect === '기타' ? (customPurpose || '기타') : purposeSelect;
+
+  if(!name){ alert('상품명을 적어주세요.'); return; }
+  if(!price || price < 0){ alert('가격을 적어주세요.'); return; }
+  if(purposeSelect === '기타' && !customPurpose){
+    alert('기타 사유를 한 줄 적어주세요.');
+    return;
+  }
+
+  items.unshift({
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+    name, price, purpose, preThought,
+    deadline: deadlineVal ? new Date(deadlineVal).toISOString() : '',
+    createdAt: Date.now(),
+    status:'detained'
+  });
+  save();
+  document.getElementById('name').value='';
+  document.getElementById('price').value='';
+  document.getElementById('deadline').value='';
+  document.getElementById('purpose').value='생활비';
+  document.getElementById('customPurpose').value='';
+  document.getElementById('preThought').value='';
+  document.getElementById('customPurposeWrap').style.display='none';
+  render();
+}
+
+function markPassed(id){
+  const x = items.find(i=>i.id===id);
+  if(!x) return;
+  if(confirm(`${x.name}\n${fmt(x.price)}를 구매하지 않은 것으로 기록할까요?`)){
+    x.status='passed';
+    save(); render();
+  }
+}
+
+function markBought(id){
+  const x = items.find(i=>i.id===id);
+  if(!x) return;
+
+  const wallet = walletInfo();
+  const methods = ['카드','계좌','휴대폰 결제','상품권·포인트','기타'];
+
+  let method = prompt(
+    `어떤 결제수단으로 탈옥했나요?\n\n${methods.map((m,i)=>`${i+1}. ${m}`).join('\n')}\n\n번호 또는 이름을 입력하세요.`
+  );
+  if(method === null) return;
+  method = method.trim();
+
+  const idx = Number(method);
+  if(Number.isInteger(idx) && idx >= 1 && idx <= methods.length) method = methods[idx-1];
+  if(!methods.includes(method)){
+    alert('카드 / 계좌 / 휴대폰 결제 / 상품권·포인트 / 기타 중 하나로 입력해 주세요.');
+    return;
+  }
+
+  let bypassReason = prompt(
+    '왜 이 결제수단으로 우회했는지 한 줄로 적어주세요.\n예: 은행이 닫혀서 휴대폰 결제로 결제함'
+  );
+  if(bypassReason === null) return;
+  bypassReason = bypassReason.trim();
+
+  let actualRaw = prompt(
+    `실제 청구액을 확인합니다.\n상품 가격은 ${fmt(x.price)}입니다.\n\n같으면 그대로 확인을 누르고, 다르면 실제 청구액만 숫자로 적어주세요.`,
+    String(x.price)
+  );
+  if(actualRaw === null) return;
+
+  const actualCharge = Number(actualRaw.trim());
+  if(!Number.isFinite(actualCharge) || actualCharge < 0){
+    alert('실제 청구액은 0원 이상의 숫자로 적어주세요.');
+    return;
+  }
+
+  const balanceNote = wallet.registered
+    ? `\n\n기록하면 방어자금 기준 남은 돈은 ${fmt(wallet.available - actualCharge)}으로 계산됩니다.`
+    : '';
+
+  const phoneNote = method === '휴대폰 결제'
+    ? `\n\n※ 휴대폰 결제 ${fmt(actualCharge)}은 지금 통장에서 안 빠져도 다음 통신요금에 청구될 돈입니다.`
+    : '';
+
+  if(confirm(
+    `${x.name}\n구매함으로 기록할까요?\n\n결제수단: ${method}\n실제 청구액: ${fmt(actualCharge)}` +
+    `${bypassReason ? `\n메모: ${bypassReason}` : ''}` +
+    `\n\n실수했더라도 기록만 남기고 여기서 끝냅니다.${phoneNote}${balanceNote}`
+  )){
+    x.status='bought';
+    x.boughtAt=Date.now();
+    x.paymentMethod=method;
+    x.bypassReason=bypassReason;
+    x.actualCharge=actualCharge;
+    save();
+    render();
+    setTimeout(() => {
+      if(confirm('사용해 본 뒤 돈값 만족도를 남길까요?')){
+        rateItem(x.id);
+      }
+    }, 0);
+  }
+}
+
+function saveAssets(){
+  const input = document.getElementById('assetInput');
+  const raw = input.value.trim();
+  if(raw === ''){
+    if(assetState && confirm('전재산 기준을 지울까요?')){
+      assetState = null;
+      saveAssetState();
+      render();
+    }
+    return;
+  }
+  const total = Number(raw);
+  if(!Number.isFinite(total) || total < 0){
+    alert('0원 이상의 금액을 적어주세요.');
+    return;
+  }
+  assetState = { total, setAt:Date.now() };
+  saveAssetState();
+  render();
+}
+
+function removeItem(id){
+  const x = items.find(i=>i.id===id);
+  if(!x) return;
+  if(confirm('이 기록을 말소할까요?')){
+    items = items.filter(i=>i.id!==id);
+    save(); render();
+  }
+}
+
+document.getElementById('purpose').addEventListener('change', (e) => {
+  const isEtc = e.target.value === '기타';
+  document.getElementById('customPurposeWrap').style.display = isEtc ? 'block' : 'none';
+  if(!isEtc) document.getElementById('customPurpose').value = '';
+});
+document.getElementById('addBtn').addEventListener('click', addItem);
+document.getElementById('saveAssetsBtn').addEventListener('click', saveAssets);
+render();
+setInterval(render, 1000);
+</script>
+</body>
+</html>
