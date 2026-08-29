@@ -1,737 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>48시간 장감옥 | 48H Spending Jail v0.3</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>머니데스 v0.1.2 | Money Death</title>
 <style>
-  :root{
-    --bg:#17191d;
-    --panel:#22262c;
-    --panel2:#2b3037;
-    --line:#555d68;
-    --text:#f2f3f5;
-    --muted:#aeb4bd;
-    --danger:#e05d5d;
-    --warn:#e0a85d;
-    --good:#8fc98f;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    background:linear-gradient(180deg,#121418,#1a1d22);
-    color:var(--text);
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  }
-  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 56px}
-  .hero{
-    border:1px solid #3c424b;
-    background:
-      repeating-linear-gradient(90deg, transparent 0 36px, rgba(255,255,255,.035) 36px 40px),
-      #1d2126;
-    border-radius:20px;
-    padding:22px 20px;
-    box-shadow:0 10px 30px rgba(0,0,0,.28);
-  }
-  .kicker{font-size:12px;letter-spacing:.16em;color:#b8bec7;text-transform:uppercase}
-  h1{margin:6px 0 6px;font-size:30px}
-  .subtitle{margin:0;color:var(--muted);line-height:1.5}
-  .quote{
-    margin-top:16px;padding:12px 14px;border-left:4px solid #737c89;
-    background:#20242a;border-radius:10px;color:#d8dde3;font-weight:700
-  }
-  .summary{
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0
-  }
-  .stat{
-    background:#15181c;border:1px solid #353b43;border-radius:14px;padding:14px
-  }
-  .stat small{color:var(--muted)}
-  .stat strong{display:block;font-size:22px;margin-top:3px}
-  .stat span{display:block;min-height:18px;margin-top:5px;color:#8f97a2;font-size:11px;line-height:1.35}
-  .section{margin-top:18px}
-  .panel{
-    background:var(--panel);border:1px solid #3b424c;border-radius:18px;padding:16px
-  }
-  .panel h2{font-size:17px;margin:0 0 12px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .full{grid-column:1/-1}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-  input,select{
-    width:100%;background:#16191d;color:var(--text);border:1px solid #464e59;
-    border-radius:11px;padding:12px 13px;font-size:15px;outline:none
-  }
-  input:focus,select:focus{border-color:#7a8492}
-  button{
-    border:0;border-radius:11px;padding:12px 14px;font-weight:800;cursor:pointer
-  }
-  .primary{background:#d1d5db;color:#15171a;width:100%;margin-top:12px}
-  .primary:hover{filter:brightness(.95)}
-  .secondary{background:#313841;color:#e4e8ec;width:100%;margin-top:12px;border:1px solid #59636f}
-  .secondary:hover{filter:brightness(1.08)}
-  .asset-preview{
-    display:flex;flex-direction:column;justify-content:center;min-height:76px;
-    padding:12px 13px;border:1px dashed #59616d;border-radius:11px;background:#1a1d22
-  }
-  .asset-preview small{color:var(--muted)}
-  .asset-preview strong{margin-top:3px;font-size:16px}
-  .asset-preview span{margin-top:4px;color:#9ca4ae;font-size:12px;line-height:1.4}
-  .list{display:grid;gap:12px;margin-top:12px}
-  .empty{color:var(--muted);text-align:center;padding:28px 10px}
-  .card{
-    position:relative;overflow:hidden;
-    background:
-      repeating-linear-gradient(90deg, transparent 0 34px, rgba(255,255,255,.04) 34px 38px),
-      var(--panel2);
-    border:1px solid #49515c;border-radius:16px;padding:15px
-  }
-  .card::before{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 30%)
-  }
-  .top{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
-  .name{font-size:18px;font-weight:900;line-height:1.3}
-  .price{font-size:18px;font-weight:900;white-space:nowrap}
-  .meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-  .badge{
-    font-size:12px;padding:6px 8px;border-radius:999px;background:#181b20;border:1px solid #434b56;color:#cbd1d8
-  }
-  .timer{
-    margin-top:12px;padding:11px 12px;background:#181b20;border:1px dashed #59616d;border-radius:10px;
-    font-variant-numeric:tabular-nums;font-weight:900
-  }
-  .timer.ready{border-color:#7aa17a;color:#bde4bd}
-  .timer.bought{border-color:#a65e5e;color:#ffb9b9}
-  .timer.gone{border-color:#767e89;color:#c8ccd2}
-  .impact{
-    margin-top:9px;padding:9px 10px;border-radius:10px;background:#1b2025;
-    border:1px solid #3b444e;color:#cbd2da;font-size:12px;line-height:1.45
-  }
-  .impact strong{color:#f0f2f4}
-  .impact.over{border-color:#965e5e;color:#ffc1c1}
-  .bypass{
-    margin-top:9px;padding:10px 11px;border-radius:10px;background:#251d1d;
-    border:1px solid #6f4646;color:#ffd0d0;font-size:12px;line-height:1.5
-  }
-  .bypass strong{color:#fff0f0}
-  .ratingBox{
-    margin-top:9px;padding:10px 11px;border-radius:10px;background:#1d2229;
-    border:1px solid #46505f;color:#e9eef6;font-size:12px;line-height:1.5
-  }
-  .ratingBox .stars{font-size:18px;letter-spacing:1px}
-  .ratingBox button{
-    margin-top:7px;padding:7px 10px;border-radius:8px;border:1px solid #596474;
-    background:#2a313b;color:#fff;cursor:pointer;font-weight:700
-  }
-  .actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
-  .btn-pass{background:#314235;color:#d9f0dd}
-  .btn-buy{background:#4a2e2e;color:#ffd3d3}
-  .btn-del{background:#343a42;color:#d6dbe1}
-  .small-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
-  .footer{margin-top:18px;text-align:center;color:#777f89;font-size:12px}
-  @media (max-width:560px){
-    .grid,.summary{grid-template-columns:1fr}
-    .actions{grid-template-columns:1fr}
-    h1{font-size:26px}
-  }
-
-  .selfReportBtn{
-    width:100%;margin-top:10px;padding:12px 14px;border-radius:12px;
-    border:1px solid #7a4d4d;background:#3a2528;color:#ffe9e9;
-    font-weight:800;cursor:pointer
-  }
-  .selfReportTag{
-    display:inline-block;margin-top:6px;padding:3px 7px;border-radius:999px;
-    background:#4a2b2f;border:1px solid #7b4a50;color:#ffd9dd;font-size:11px;font-weight:800
-  }
-
-  .thoughtBox{
-    margin-top:8px;padding:9px 10px;border-radius:10px;background:#20242b;
-    border:1px solid #4d5663;color:#e8edf4;font-size:12px;line-height:1.5
-  }
-  .thoughtBox strong{color:#fff}
-
-  .emergencyBtn{
-    width:100%;margin-top:10px;padding:13px 14px;border-radius:12px;
-    border:1px solid #8d5a23;background:#3b2c1f;color:#ffe6bd;
-    font-weight:900;cursor:pointer
-  }
-  .emergencyTag{
-    display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;
-    background:#4a351d;border:1px solid #8c642d;color:#ffe0a6;
-    font-size:11px;font-weight:900
-  }
-
-  .ratingSlider{width:100%;margin-top:8px}
-  .ratingValue{font-size:22px;font-weight:900}
-  .ratingScale{display:flex;justify-content:space-between;font-size:10px;opacity:.65;margin-top:2px}
+:root{--bg:#0f1115;--panel:#171a20;--panel2:#1e222b;--line:#343a46;--text:#f4f6f8;--muted:#aeb5c0;--danger:#5a292d;--good:#29432f;--warn:#4c3a23}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif} button,input,select,textarea{font:inherit}
+.wrap{max-width:780px;margin:auto;padding:18px 14px 94px} header{padding:10px 4px 18px} h1{margin:0;font-size:28px;letter-spacing:-.8px}.sub{color:var(--muted);font-size:12px;margin-top:5px}
+.hero{border:1px solid var(--line);background:linear-gradient(180deg,#1b1f26,#14171c);border-radius:22px;padding:18px;margin-bottom:14px}.hero .title{font-weight:900;font-size:15px}.quote{margin-top:12px;padding:13px;border-left:4px solid #707886;background:#20242b;border-radius:10px;font-weight:800}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.stat{background:#12151a;border:1px solid var(--line);border-radius:15px;padding:14px}.stat .k{color:var(--muted);font-size:12px}.stat .v{font-size:23px;font-weight:900;margin-top:4px}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:16px;margin:12px 0}.panel h2{font-size:18px;margin:0 0 12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin:10px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+input,select,textarea{width:100%;background:#11141a;color:var(--text);border:1px solid #4a5260;border-radius:12px;padding:12px}textarea{min-height:78px;resize:vertical}
+.btn{width:100%;border:1px solid #56606f;background:#2d333d;color:white;border-radius:12px;padding:12px;font-weight:900;cursor:pointer}.btn.good{background:var(--good);border-color:#466b4f}.btn.warn{background:var(--warn);border-color:#74592f}.btn.danger{background:var(--danger);border-color:#794147}.btn.ghost{background:#22262e}.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small{font-size:11px;color:var(--muted);line-height:1.45}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:#11141a;border-top:1px solid var(--line);display:flex;justify-content:center;z-index:20}.tabs .inner{width:min(780px,100%);display:grid;grid-template-columns:repeat(5,1fr)}.tab{border:0;background:transparent;color:#8f97a3;padding:11px 4px 14px;font-size:11px;font-weight:800}.tab.active{color:white;background:#1a1e25}.page{display:none}.page.active{display:block}
+.card{border:1px solid var(--line);background:var(--panel2);border-radius:16px;padding:14px;margin:10px 0}.cardTop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}.name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.price{font-weight:900}.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.badge{font-size:11px;color:#d7dce3;border:1px solid #4a5260;border-radius:999px;padding:4px 8px}.timer{margin-top:10px;padding:10px;background:#12151a;border-radius:10px;font-weight:900}.thought{margin-top:8px;padding:10px;background:#20242b;border-radius:10px;font-size:12px;line-height:1.45}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.actions button{border:1px solid #555e6c;background:#2b3038;color:white;border-radius:10px;padding:9px 6px;font-weight:800;font-size:12px}.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi .stat{background:#15181e}.progress{height:10px;border-radius:999px;background:#0f1217;overflow:hidden;border:1px solid #39414d}.progress>div{height:100%;background:#6f7783}.rangeRow{display:grid;grid-template-columns:1fr 50px;gap:10px;align-items:center}.empty{text-align:center;color:var(--muted);padding:22px 8px}
+.customDuration{display:none;grid-template-columns:minmax(0,1fr) 110px;gap:8px;margin-top:8px}.customDuration.show{display:grid}
+.jailSummary{cursor:pointer;font-size:18px;font-weight:900;list-style:none;display:flex;align-items:center;justify-content:space-between}.jailSummary::-webkit-details-marker{display:none}.jailSummary::after{content:'펼치기';font-size:11px;color:var(--muted);font-weight:700}.jailDetails[open] .jailSummary::after{content:'접기'}.jailDetails[open] .jailSummary{margin-bottom:12px}
 </style>
 </head>
-<body><div style="margin-top:10px;padding:8px 10px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;opacity:.75">
-v0.3 · GitHub 배포판 — 48시간 수감 / 긴급체포 / 자수 / 결제 직전 생각 / 결제수단 / 돈값 만족도
-</div>
+<body>
 <div class="wrap">
-  <section class="hero">
-    <div class="kicker">Impulse Detention System</div>
-    <h1>48시간 장감옥 <span style="font-size:14px;color:#8f97a2">v0.3</span></h1>
-    <p class="subtitle">충동구매 현행범을 48시간 수감합니다.</p>
-    <div class="quote">“사고 싶은 건 가둔다. 돈은 풀어두지 않는다.”</div>
+<header><h1>머니데스 <span style="font-size:12px;color:#9da4af">v0.1.2</span></h1><div class="sub">Money Death · 돈이 빠져나가기 전에 한 번 붙잡는 소비 방어 도구</div></header>
 
-    <div class="summary">
-      <div class="stat">
-        <small>전재산 기준</small>
-        <strong id="assetTotal">미등록</strong>
-        <span id="assetTotalSub">아래에서 현재 가진 돈을 적어주세요</span>
-      </div>
-      <div class="stat">
-        <small>현재 남은 돈</small>
-        <strong id="availableTotal">—</strong>
-        <span id="availableSub">탈옥 기록을 반영해 계산합니다</span>
-      </div>
-      <div class="stat">
-        <small>현재 수감액</small>
-        <strong id="detainedTotal">0원</strong>
-        <span id="detainedSub">전재산 기준을 넣으면 비율을 보여줘요</span>
-      </div>
-      <div class="stat">
-        <small>지킨 돈</small>
-        <strong id="savedTotal">0원</strong>
-        <span>석방 포기로 지킨 누적 금액</span>
-      </div>
-    </div>
-  </section>
+<section id="home" class="page active">
+  <div class="hero"><div class="title">오늘의 생존 자금</div><div class="quote">“쓸 수 있는 돈과 지켜야 할 돈을 분리한다.”</div>
+    <div class="grid4"><div class="stat"><div class="k">보유금</div><div class="v" id="homeTotal">0원</div></div><div class="stat"><div class="k">보호금</div><div class="v" id="homeProtected">0원</div></div><div class="stat"><div class="k">예약금</div><div class="v" id="homeReserved">0원</div></div><div class="stat"><div class="k">자유금</div><div class="v" id="homeFree">0원</div></div></div>
+  </div>
+  <div class="panel"><h2>오늘 방어 현황</h2><div class="kpi"><div class="stat"><div class="k">지킨 돈</div><div class="v" id="homeSaved">0원</div></div><div class="stat"><div class="k">실제 결제</div><div class="v" id="homeSpent">0원</div></div></div><div class="small" style="margin-top:10px">석방 포기·브레이크 중단·부분 방어로 지킨 금액을 합산합니다.</div></div>
+  <div class="panel"><h2>빠른 행동</h2><div class="btns"><button class="btn warn" onclick="go('jail')">사고 싶은 것 수감</button><button class="btn ghost" onclick="go('brake')">결제 직전 10초</button></div></div>
+</section>
 
-  <section class="section panel">
-    <h2>전재산 기준</h2>
-    <div class="grid">
-      <div>
-        <label for="assetInput">현재 쓸 수 있는 전재산</label>
-        <input id="assetInput" type="number" min="0" step="1000" inputmode="numeric" placeholder="예: 350000" />
-      </div>
-      <div class="asset-preview">
-        <small>지금 수감 중인 금액</small>
-        <strong id="assetPreviewMain">전재산을 등록해 주세요</strong>
-        <span id="assetPreviewSub">저장 후 물건 하나를 샀을 때의 남은 돈도 보여줍니다.</span>
-      </div>
-    </div>
-    <button class="secondary" id="saveAssetsBtn">전재산 저장</button>
-    <div class="small-note">통장·현금 등 지금 실제로 쓸 수 있는 돈을 합쳐 적어주세요. 저장 뒤 “탈옥함(샀음)”으로 기록한 실제 청구액을 방어자금에서 자동으로 뺍니다. 휴대폰 결제도 다음 통신요금으로 빠질 돈이므로 동일하게 반영합니다. 실제 잔액이 달라지면 이 값을 다시 저장하면 됩니다.</div>
-  </section>
+<section id="jail" class="page">
+  <div class="panel"><h2>장감옥</h2><div class="small">사고 싶은 걸 원하는 기간 동안 보류합니다. 시간이 끝나도 자동 구매 허용이 아니라 다시 판단 가능한 상태로만 바뀝니다.</div>
+    <div class="field"><label>상품명</label><input id="jName" placeholder="예: 달 2회 패키지"></div>
+    <div class="row"><div class="field"><label>가격</label><input id="jPrice" inputmode="numeric" placeholder="25000"></div><div class="field"><label for="jHours">수감 기간</label><select id="jHours" onchange="toggleCustomDuration()"><option value="24">24시간</option><option value="48" selected>48시간</option><option value="72">72시간</option><option value="168">1주</option><option value="336">2주</option><option value="custom">직접 입력</option></select><div id="jCustomDuration" class="customDuration"><input id="jCustomValue" type="number" inputmode="numeric" min="1" step="1" placeholder="기간" aria-label="직접 입력 기간"><select id="jCustomUnit" aria-label="직접 입력 단위"><option value="hours">시간</option><option value="days" selected>일</option></select></div></div></div>
+    <div class="field"><label>지킬 돈</label><select id="jPurpose"><option>생활비</option><option>교통비</option><option>비상금</option><option>저축</option><option>기타</option></select></div>
+    <div class="field"><label>결제 직전 생각 (선택)</label><input id="jThought" placeholder="예: 10연 정도야 / 한정이니까 / 화나니까"></div><button class="btn warn" onclick="detain()">수감하기</button>
+  </div>
+  <div class="panel"><details class="jailDetails"><summary class="jailSummary">수감자 명단</summary><div id="jailList"></div></details></div>
+  <div class="panel"><h2>이미 샀다면 자수</h2><div class="row"><div class="field"><label>항목</label><input id="sName" placeholder="예: 유상 10연"></div><div class="field"><label>실제 결제액</label><input id="sPrice" inputmode="numeric" placeholder="10000"></div></div><div class="field"><label>결제 직전 생각 (선택)</label><input id="sThought" placeholder="예: 망했으니까 10연만 더"></div><button class="btn danger" onclick="selfReport()">자수 기록</button></div>
+</section>
 
-  <section class="section panel">
-    <h2>새로운 현행범 수감</h2>
-    <div class="grid">
-      <div class="full">
-        <label for="name">상품명</label>
-        <input id="name" placeholder="예: 한정 가챠 패키지" />
-      </div>
-      <div>
-        <label for="price">가격</label>
-        <input id="price" type="number" min="0" step="100" placeholder="44000" />
-      </div>
-      <div>
-        <label for="deadline">이벤트 종료일</label>
-        <input id="deadline" type="datetime-local" />
-      </div>
-      <div class="full">
-        <label for="purpose">이 돈은 무엇을 지키는 돈?</label>
-        <select id="purpose">
-          <option>생활비</option>
-          <option>교통비</option>
-          <option>비상금</option>
-          <option>저축</option>
-          <option value="기타">기타(직접 입력)</option>
-        </select>
-      </div>
-      <div class="full" id="customPurposeWrap" style="display:none">
-        <label for="customPurpose">기타 사유</label>
-        <input id="customPurpose" placeholder="예: 다음 달 고정비, 비상시에 쓸 돈, 꼭 남겨두고 싶은 돈" />
-      </div>
-      <div class="full">
-        <label for="preThought">결제 직전 생각 <span style="opacity:.65;font-weight:400">(선택)</span></label>
-        <input id="preThought" placeholder="예: 아직 30만 원대니까 괜찮아" />
-      </div>
-    </div>
-    <button class="primary" id="addBtn">수감시키기</button>
-    <div class="small-note">수감 시각부터 48시간 동안 “구매 금지” 상태가 유지됩니다. 48시간 후에도 자동 구매 허용이 아니라, 다시 판단 가능한 상태로만 바뀝니다.</div>
-  </section>
+<section id="brake" class="page">
+  <div class="panel"><h2>브레이크 테스트</h2><div class="small">결제 버튼을 누르기 전에 10초만 멈춥니다. 결론은 금지/허용이 아니라 기록입니다.</div>
+    <div class="row"><div class="field"><label>상품명</label><input id="bName" placeholder="예: 한정 패키지"></div><div class="field"><label>가격</label><input id="bPrice" inputmode="numeric" placeholder="44000"></div></div>
+    <div class="field"><label>지킬 돈</label><select id="bPurpose"><option>생활비</option><option>교통비</option><option>비상금</option><option>저축</option></select></div><div class="field"><label>지금 드는 생각</label><input id="bThought" placeholder="예: 20만 원 있으니 괜찮겠지"></div><button class="btn" onclick="startBrake()">10초 브레이크 시작</button>
+    <div id="brakeBox" style="display:none;margin-top:12px"><div class="timer" id="brakeTimer">10</div><div class="progress"><div id="brakeProgress" style="width:0%"></div></div><div id="brakeChoices" style="display:none;margin-top:12px" class="btns"><button class="btn good" onclick="brakeStop()">안 산다</button><button class="btn danger" onclick="brakeBuy()">그래도 산다</button></div></div>
+  </div>
+  <div class="panel"><h2>부분 방어</h2><div class="small">원래 사고 싶던 금액보다 적게 썼다면, 줄인 금액만 별도로 기록합니다.</div><div class="row"><div class="field"><label>원래 금액</label><input id="pWanted" inputmode="numeric" placeholder="44000"></div><div class="field"><label>실제 결제액</label><input id="pActual" inputmode="numeric" placeholder="25000"></div></div><div class="field"><label>메모 (선택)</label><input id="pMemo" placeholder="예: 4.4만 대신 2.5만에서 멈춤"></div><button class="btn good" onclick="partialDefense()">부분 방어 기록</button></div>
+</section>
 
-  <section class="section panel">
-    <h2>수감자 명단</h2>
-    <button class="emergencyBtn" onclick="emergencyArrest()">지금 사고 싶다면 긴급체포</button>
-<div style="margin-top:6px;font-size:11px;opacity:.75">고민 중인 소비를 최소 입력만 받고 즉시 48시간 수감합니다.</div>
-<button class="selfReportBtn" onclick="selfReport()">이미 사버렸다면 자수하기</button><div style="margin-top:6px;font-size:11px;opacity:.75">감옥에 넣기 전에 이미 결제했다면 자수로 바로 기록합니다.</div>
-<div id="list" class="list"></div>
-  </section>
+<section id="records" class="page"><div class="panel"><h2>기록</h2><div class="kpi"><div class="stat"><div class="k">누적 지킨 돈</div><div class="v" id="recSaved">0원</div></div><div class="stat"><div class="k">누적 결제</div><div class="v" id="recSpent">0원</div></div></div></div><div id="recordList"></div></section>
 
-  <div class="footer">데이터는 이 브라우저에만 저장됩니다 · localStorage 사용</div>
+<section id="settings" class="page">
+  <div class="panel"><h2>자산 설정</h2><div class="field"><label>현재 보유금</label><input id="setTotal" inputmode="numeric" placeholder="0"></div><div class="field"><label>보호금</label><input id="setProtected" inputmode="numeric" placeholder="0"></div><div class="field"><label>다음 달 예약금</label><input id="setReserved" inputmode="numeric" placeholder="0"></div><button class="btn" onclick="saveSettings()">저장</button><div class="small" style="margin-top:10px">자유금 = 보유금 - 보호금 - 예약금. 실제 결제 기록은 보유금에서 자동 차감하지 않습니다. 잔액이 달라지면 직접 수정하는 구조입니다.</div></div>
+  <div class="panel"><h2>백업</h2><div class="btns"><button class="btn ghost" onclick="exportData()">JSON 내보내기</button><button class="btn ghost" onclick="document.getElementById('importFile').click()">JSON 불러오기</button></div><input id="importFile" type="file" accept="application/json" style="display:none" onchange="importData(event)"><div class="small" style="margin-top:10px">데이터는 이 브라우저의 localStorage에만 저장됩니다.</div></div>
+  <div class="panel"><h2>초기화</h2><button class="btn danger" onclick="resetAll()">모든 데이터 삭제</button></div>
+</section>
 </div>
+
+<nav class="tabs"><div class="inner"><button class="tab active" data-page="home" onclick="go('home')">홈</button><button class="tab" data-page="jail" onclick="go('jail')">장감옥</button><button class="tab" data-page="brake" onclick="go('brake')">브레이크</button><button class="tab" data-page="records" onclick="go('records')">기록</button><button class="tab" data-page="settings" onclick="go('settings')">설정</button></div></nav>
 
 <script>
-const KEY = 'janggamok_v01_items';
-const ASSET_KEY = 'janggamok_v02_asset_state';
-let items = JSON.parse(localStorage.getItem(KEY) || '[]');
-let assetState = loadAssetState();
-
-const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
-const save = () => localStorage.setItem(KEY, JSON.stringify(items));
-
-function loadAssetState(){
-  try{
-    const saved = localStorage.getItem(ASSET_KEY);
-    if(!saved) return null;
-    const state = JSON.parse(saved);
-    const total = Number(state.total);
-    const setAt = Number(state.setAt);
-    if(!Number.isFinite(total) || total < 0 || !Number.isFinite(setAt)) return null;
-    return { total, setAt };
-  } catch {
-    return null;
-  }
-}
-
-function saveAssetState(){
-  if(assetState) localStorage.setItem(ASSET_KEY, JSON.stringify(assetState));
-  else localStorage.removeItem(ASSET_KEY);
-}
-
-function walletInfo(){
-  if(!assetState) return { registered:false, total:0, spent:0, available:0 };
-  const spent = items
-    .filter(x => x.status === 'bought' && Number(x.boughtAt || 0) >= assetState.setAt)
-    .reduce((sum, x) => sum + Number(x.actualCharge ?? x.price ?? 0), 0);
-  return {
-    registered:true,
-    total:assetState.total,
-    spent,
-    available:assetState.total - spent
-  };
-}
-
-function percentText(amount, base){
-  if(!(base > 0)) return '';
-  const percentage = Math.round((Number(amount || 0) / base) * 1000) / 10;
-  return `${percentage.toLocaleString('ko-KR')}%`;
-}
-
-function escapeHtml(s=''){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-
-function remainingText(createdAt){
-  const end = createdAt + 48*60*60*1000;
-  const diff = end - Date.now();
-  if(diff <= 0) return {text:'가석방 심사 가능 · 다시 판단해도 됨', cls:'ready'};
-  const h = Math.floor(diff/3600000);
-  const m = Math.floor((diff%3600000)/60000);
-  const s = Math.floor((diff%60000)/1000);
-  return {text:`수감 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} 남음`, cls:''};
-}
-
-function itemImpact(item, wallet){
-  if(!wallet.registered || item.status !== 'detained') return '';
-  const left = wallet.available - Number(item.price || 0);
-  const percentage = percentText(item.price, wallet.available);
-  const detail = percentage ? ` · 현재 남은 돈의 ${percentage}` : ' · 현재 남은 돈을 넘김';
-  return `<div class="impact${left < 0 ? ' over' : ''}">이걸 사면 남는 돈 <strong>${fmt(left)}</strong>${detail}</div>`;
-}
-
-function paymentNote(item){
-  if(item.status !== 'bought' || !item.paymentMethod) return '';
-  const charge = Number(item.actualCharge ?? item.price ?? 0);
-  const phoneNote = item.paymentMethod === '휴대폰 결제'
-    ? `<br>${won(charge)}은 다음 통신요금에 청구될 돈으로 잡아둡니다.`
-    : '';
-  return `<div class="bypass"><strong>결제수단: ${escapeHtml(item.paymentMethod)}</strong>${phoneNote}</div>`;
-}
-
-
-
-function emergencyArrest(){
-  const nameRaw = prompt('긴급체포할 항목은 무엇인가요?\n예: 9,900원 패키지, 굿즈, 카페');
-  if(nameRaw === null) return;
-  const name = nameRaw.trim();
-  if(!name) return alert('항목 이름을 입력해 주세요.');
-
-  const priceRaw = prompt('가격은 얼마인가요? 숫자만 입력해 주세요.');
-  if(priceRaw === null) return;
-  const price = Number(String(priceRaw).replace(/[^\d.]/g,''));
-  if(!Number.isFinite(price) || price < 0){
-    return alert('금액을 숫자로 입력해 주세요.');
-  }
-
-  let preThought = prompt(
-    '지금 결제 직전 무슨 생각이 들었나요? (선택)\n예: 아직 30만 원대니까 괜찮아 / 이번 한 번만',
-    ''
-  );
-  if(preThought === null) preThought = '';
-
-  const createdAt = Date.now();
-  const item = {
-    id: 'emg_' + createdAt + '_' + Math.random().toString(36).slice(2,8),
-    name,
-    price,
-    purpose: '긴급체포',
-    customPurpose: '',
-    deadline: '',
-    createdAt,
-    status: 'detained',
-    preThought: preThought.trim(),
-    emergencyArrest: true
-  };
-
-  items.unshift(item);
-  save();
-  render();
-  alert('긴급체포 완료. 지금부터 48시간 수감합니다.');
-}
-
-function selfReport(){
-  const nameRaw = prompt('무엇을 샀나요?\n예: 만화카페, 게임 패키지, 간식');
-  if(nameRaw === null) return;
-  const name = nameRaw.trim();
-  if(!name) return alert('항목 이름을 입력해 주세요.');
-
-  const priceRaw = prompt('실제로 쓴 금액은 얼마인가요? 숫자만 입력해 주세요.');
-  if(priceRaw === null) return;
-  const actualCharge = Number(String(priceRaw).replace(/[^\d.]/g,''));
-  if(!Number.isFinite(actualCharge) || actualCharge < 0){
-    return alert('금액을 숫자로 입력해 주세요.');
-  }
-
-  const methodRaw = prompt(
-    '결제수단을 골라 주세요.\n1. 카드\n2. 계좌\n3. 휴대폰 결제\n4. 상품권·포인트\n5. 기타',
-    '1'
-  );
-  if(methodRaw === null) return;
-
-  const methodMap = {'1':'카드','2':'계좌','3':'휴대폰 결제','4':'상품권·포인트','5':'기타'};
-  const paymentMethod = methodMap[methodRaw.trim()] || methodRaw.trim() || '기타';
-
-  let preThought = prompt(
-    '결제 직전에 어떤 생각이 들었나요? (선택)\n예: 아직 30만 원대니까 괜찮아 / 10연이면 될 것 같아',
-    ''
-  );
-  if(preThought === null) preThought = '';
-
-  const now = Date.now();
-  const item = {
-    id: 'self_' + now + '_' + Math.random().toString(36).slice(2,8),
-    name,
-    price: actualCharge,
-    actualCharge,
-    createdAt: now,
-    boughtAt: now,
-    status: 'bought',
-    paymentMethod,
-    preThought: preThought.trim(),
-    selfReported: true
-  };
-
-  items.unshift(item);
-  save();
-  render();
-
-  setTimeout(() => {
-    if(confirm('자수 완료. 돈값 만족도를 남길까요?')){
-      rateItem(item.id);
-    }
-  }, 0);
-}
-
-function emergencyTag(item){
-  return item.emergencyArrest ? '<span class="emergencyTag">긴급체포</span>' : '';
-}
-
-function thoughtNote(item){
-  if(!item.preThought) return '';
-  return `<div class="thoughtBox"><strong>결제 직전 생각</strong><br>${escapeHtml(item.preThought)}</div>`;
-}
-
-function ratingLabel(n){
-  if(n >= 85) return '매우 만족';
-  if(n >= 65) return '만족';
-  if(n >= 40) return '보통';
-  if(n >= 20) return '아쉬움';
-  return '후회';
-}
-
-function ratingNote(item){
-  if(item.status !== 'bought') return '';
-  const has = Number.isFinite(Number(item.rating));
-  const value = has ? Math.max(0, Math.min(100, Number(item.rating))) : 50;
-  const memo = item.ratingMemo ? `<br>메모: ${escapeHtml(item.ratingMemo)}` : '';
-  return `<div class="ratingBox">
-    <div><strong>돈값 만족도</strong></div>
-    <div class="ratingValue">${has ? value : '—'}</div>
-    <input class="ratingSlider" type="range" min="0" max="100" step="1" value="${value}"
-      onchange="saveRatingFromSlider('${item.id}', this.value)">
-    <div class="ratingScale"><span>0 후회</span><span>50 보통</span><span>100 매우 만족</span></div>
-    <div style="margin-top:5px">${has ? ratingLabel(value) : '막대를 움직이면 저장됩니다.'}${memo}</div>
-    <button onclick="editRatingMemo('${item.id}')">메모 수정</button>
-  </div>`;
-}
-
-function saveRatingFromSlider(id, value){
-  const x = items.find(i=>i.id===id);
-  if(!x || x.status !== 'bought') return;
-  x.rating = Math.max(0, Math.min(100, Number(value)));
-  save();
-  render();
-}
-
-function editRatingMemo(id){
-  const x = items.find(i=>i.id===id);
-  if(!x || x.status !== 'bought') return;
-  let memo = prompt('한 줄 메모를 남길까요? (선택)', x.ratingMemo || '');
-  if(memo === null) return;
-  x.ratingMemo = memo.trim();
-  save();
-  render();
-}
-
-function rateItem(id){
-  const x = items.find(i=>i.id===id);
-  if(!x || x.status !== 'bought') return;
-  if(!Number.isFinite(Number(x.rating))) x.rating = 50;
-  save();
-  render();
-}
-
-function render(){
-  const list = document.getElementById('list');
-  const wallet = walletInfo();
-  if(!items.length){
-    list.innerHTML = '<div class="empty">현재 수감자가 없습니다.<br>사고 싶은 것이 생기면 여기부터 들르세요.</div>';
-  } else {
-    list.innerHTML = items.map(item => {
-      let timer = remainingText(item.createdAt);
-      if(item.status === 'bought') timer = {text:'탈옥함 · 구매 완료', cls:'bought'};
-      if(item.status === 'passed') timer = {text:'영구 석방 · 구매 포기', cls:'gone'};
-      const deadline = item.deadline ? new Date(item.deadline).toLocaleString('ko-KR') : '미설정';
-      const impact = itemImpact(item, wallet);
-      const payNote = paymentNote(item);
-      const rating = ratingNote(item);
-      const thought = thoughtNote(item);
-      const emergency = emergencyTag(item);
-      return `
-        <article class="card">
-          <div class="top">
-            <div class="name">${escapeHtml(item.name)} ${emergency}${item.selfReported ? '<span class="selfReportTag">자수</span>' : ''}</div>
-            <div class="price">${fmt(item.price)}</div>
-          </div>
-          <div class="meta">
-            <span class="badge">보호 대상: ${escapeHtml(item.purpose)}</span>
-            <span class="badge">종료: ${escapeHtml(deadline)}</span>
-          </div>
-          <div class="timer ${timer.cls}">${timer.text}</div>
-          ${impact}
-          ${thought}
-          ${payNote}
-          ${rating}
-          <div class="actions">
-            <button class="btn-pass" onclick="markPassed('${item.id}')">석방 포기</button>
-            <button class="btn-buy" onclick="markBought('${item.id}')">탈옥함(샀음)</button>
-            <button class="btn-del" onclick="removeItem('${item.id}')">기록 말소</button>
-          </div>
-        </article>`;
-    }).join('');
-  }
-
-  const detained = items
-    .filter(x => x.status === 'detained')
-    .reduce((a,b)=>a+Number(b.price||0),0);
-  const saved = items
-    .filter(x => x.status === 'passed')
-    .reduce((a,b)=>a+Number(b.price||0),0);
-
-  const assetTotal = document.getElementById('assetTotal');
-  const assetTotalSub = document.getElementById('assetTotalSub');
-  const availableTotal = document.getElementById('availableTotal');
-  const availableSub = document.getElementById('availableSub');
-  const detainedSub = document.getElementById('detainedSub');
-  const assetPreviewMain = document.getElementById('assetPreviewMain');
-  const assetPreviewSub = document.getElementById('assetPreviewSub');
-  const assetInput = document.getElementById('assetInput');
-
-  document.getElementById('detainedTotal').textContent = fmt(detained);
-  document.getElementById('savedTotal').textContent = fmt(saved);
-
-  if(wallet.registered){
-    const detainedRatio = percentText(detained, wallet.available);
-    const afterAllEscape = wallet.available - detained;
-    assetTotal.textContent = fmt(wallet.total);
-    assetTotalSub.textContent = '저장 시점의 기준 금액';
-    availableTotal.textContent = fmt(wallet.available);
-    availableSub.textContent = wallet.spent ? `탈옥 기록 ${fmt(wallet.spent)} 반영` : '아직 탈옥 기록 없음';
-    detainedSub.textContent = detainedRatio
-      ? `현재 남은 돈의 ${detainedRatio} 수감 중`
-      : '현재 남은 돈이 없어 비율 계산 불가';
-    assetPreviewMain.textContent = detainedRatio
-      ? `현재 남은 돈의 ${detainedRatio} 수감 중`
-      : '현재 남은 돈을 넘긴 수감액';
-    assetPreviewSub.textContent = `수감자를 모두 사면 ${fmt(afterAllEscape)} 남음`;
-    if(document.activeElement !== assetInput) assetInput.value = String(wallet.total);
-  } else {
-    assetTotal.textContent = '미등록';
-    assetTotalSub.textContent = '아래에서 현재 가진 돈을 적어주세요';
-    availableTotal.textContent = '—';
-    availableSub.textContent = '전재산 저장 후 계산합니다';
-    detainedSub.textContent = '전재산 기준을 넣으면 비율을 보여줘요';
-    assetPreviewMain.textContent = '전재산을 등록해 주세요';
-    assetPreviewSub.textContent = '저장 후 물건 하나를 샀을 때의 남은 돈도 보여줍니다.';
-    if(document.activeElement !== assetInput) assetInput.value = '';
-  }
-}
-
-function addItem(){
-  const name = document.getElementById('name').value.trim();
-  const price = Number(document.getElementById('price').value);
-  const deadlineVal = document.getElementById('deadline').value;
-  const purposeSelect = document.getElementById('purpose').value;
-  const customPurpose = document.getElementById('customPurpose').value.trim();
-  const preThought = document.getElementById('preThought').value.trim();
-  const purpose = purposeSelect === '기타' ? (customPurpose || '기타') : purposeSelect;
-
-  if(!name){ alert('상품명을 적어주세요.'); return; }
-  if(!price || price < 0){ alert('가격을 적어주세요.'); return; }
-  if(purposeSelect === '기타' && !customPurpose){
-    alert('기타 사유를 한 줄 적어주세요.');
-    return;
-  }
-
-  items.unshift({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
-    name, price, purpose, preThought,
-    deadline: deadlineVal ? new Date(deadlineVal).toISOString() : '',
-    createdAt: Date.now(),
-    status:'detained'
-  });
-  save();
-  document.getElementById('name').value='';
-  document.getElementById('price').value='';
-  document.getElementById('deadline').value='';
-  document.getElementById('purpose').value='생활비';
-  document.getElementById('customPurpose').value='';
-  document.getElementById('preThought').value='';
-  document.getElementById('customPurposeWrap').style.display='none';
-  render();
-}
-
-function markPassed(id){
-  const x = items.find(i=>i.id===id);
-  if(!x) return;
-  if(confirm(`${x.name}\n${fmt(x.price)}를 구매하지 않은 것으로 기록할까요?`)){
-    x.status='passed';
-    save(); render();
-  }
-}
-
-function markBought(id){
-  const x = items.find(i=>i.id===id);
-  if(!x) return;
-
-  const wallet = walletInfo();
-  const methods = ['카드','계좌','휴대폰 결제','상품권·포인트','기타'];
-
-  let method = prompt(
-    `어떤 결제수단으로 탈옥했나요?\n\n${methods.map((m,i)=>`${i+1}. ${m}`).join('\n')}\n\n번호 또는 이름을 입력하세요.`
-  );
-  if(method === null) return;
-  method = method.trim();
-
-  const idx = Number(method);
-  if(Number.isInteger(idx) && idx >= 1 && idx <= methods.length) method = methods[idx-1];
-  if(!methods.includes(method)){
-    alert('카드 / 계좌 / 휴대폰 결제 / 상품권·포인트 / 기타 중 하나로 입력해 주세요.');
-    return;
-  }
-
-  let bypassReason = prompt(
-    '왜 이 결제수단으로 우회했는지 한 줄로 적어주세요.\n예: 은행이 닫혀서 휴대폰 결제로 결제함'
-  );
-  if(bypassReason === null) return;
-  bypassReason = bypassReason.trim();
-
-  let actualRaw = prompt(
-    `실제 청구액을 확인합니다.\n상품 가격은 ${fmt(x.price)}입니다.\n\n같으면 그대로 확인을 누르고, 다르면 실제 청구액만 숫자로 적어주세요.`,
-    String(x.price)
-  );
-  if(actualRaw === null) return;
-
-  const actualCharge = Number(actualRaw.trim());
-  if(!Number.isFinite(actualCharge) || actualCharge < 0){
-    alert('실제 청구액은 0원 이상의 숫자로 적어주세요.');
-    return;
-  }
-
-  const balanceNote = wallet.registered
-    ? `\n\n기록하면 방어자금 기준 남은 돈은 ${fmt(wallet.available - actualCharge)}으로 계산됩니다.`
-    : '';
-
-  const phoneNote = method === '휴대폰 결제'
-    ? `\n\n※ 휴대폰 결제 ${fmt(actualCharge)}은 지금 통장에서 안 빠져도 다음 통신요금에 청구될 돈입니다.`
-    : '';
-
-  if(confirm(
-    `${x.name}\n구매함으로 기록할까요?\n\n결제수단: ${method}\n실제 청구액: ${fmt(actualCharge)}` +
-    `${bypassReason ? `\n메모: ${bypassReason}` : ''}` +
-    `\n\n실수했더라도 기록만 남기고 여기서 끝냅니다.${phoneNote}${balanceNote}`
-  )){
-    x.status='bought';
-    x.boughtAt=Date.now();
-    x.paymentMethod=method;
-    x.bypassReason=bypassReason;
-    x.actualCharge=actualCharge;
-    save();
-    render();
-    setTimeout(() => {
-      if(confirm('사용해 본 뒤 돈값 만족도를 남길까요?')){
-        rateItem(x.id);
-      }
-    }, 0);
-  }
-}
-
-function saveAssets(){
-  const input = document.getElementById('assetInput');
-  const raw = input.value.trim();
-  if(raw === ''){
-    if(assetState && confirm('전재산 기준을 지울까요?')){
-      assetState = null;
-      saveAssetState();
-      render();
-    }
-    return;
-  }
-  const total = Number(raw);
-  if(!Number.isFinite(total) || total < 0){
-    alert('0원 이상의 금액을 적어주세요.');
-    return;
-  }
-  assetState = { total, setAt:Date.now() };
-  saveAssetState();
-  render();
-}
-
-function removeItem(id){
-  const x = items.find(i=>i.id===id);
-  if(!x) return;
-  if(confirm('이 기록을 말소할까요?')){
-    items = items.filter(i=>i.id!==id);
-    save(); render();
-  }
-}
-
-document.getElementById('purpose').addEventListener('change', (e) => {
-  const isEtc = e.target.value === '기타';
-  document.getElementById('customPurposeWrap').style.display = isEtc ? 'block' : 'none';
-  if(!isEtc) document.getElementById('customPurpose').value = '';
-});
-document.getElementById('addBtn').addEventListener('click', addItem);
-document.getElementById('saveAssetsBtn').addEventListener('click', saveAssets);
-render();
-setInterval(render, 1000);
+const KEY='moneydeath_v01'; let state=load(); let brakeInterval=null; let currentBrake=null;
+function defaultState(){return {settings:{total:0,protected:0,reserved:0},jail:[],records:[]}}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||defaultState()}catch(e){return defaultState()}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function won(n){return Number(n||0).toLocaleString('ko-KR')+'원'}
+function num(v){return Number(String(v??'').replace(/[^\d.-]/g,''))||0}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===id));render()}
+function nowISO(){return new Date().toISOString()}
+function addRecord(r){state.records.unshift({id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),at:nowISO(),...r})}
+function saveSettings(){state.settings.total=num(setTotal.value);state.settings.protected=num(setProtected.value);state.settings.reserved=num(setReserved.value);save();render();alert('자산 기준을 저장했습니다.')}
+function toggleCustomDuration(){const custom=jHours.value==='custom';jCustomDuration.classList.toggle('show',custom);if(custom)jCustomValue.focus()}
+function getJailHours(){if(jHours.value!=='custom')return num(jHours.value);const value=num(jCustomValue.value);return jCustomUnit.value==='days'?value*24:value}
+function jailDurationLabel(hours){hours=num(hours);if(hours>0&&hours%168===0)return (hours/168)+'주';if(hours>0&&hours%24===0)return (hours/24)+'일';return hours+'시간'}
+function detain(){const name=jName.value.trim(),price=num(jPrice.value),hours=getJailHours();if(!name||price<=0)return alert('상품명과 가격을 입력해 주세요.');if(!Number.isFinite(hours)||hours<=0)return alert('수감 기간을 1 이상의 숫자로 입력해 주세요.');const created=Date.now();state.jail.unshift({id:'j_'+created+'_'+Math.random().toString(36).slice(2,7),name,price,hours,purpose:jPurpose.value,thought:jThought.value.trim(),createdAt:created,releaseAt:created+hours*3600*1000,status:'detained'});jName.value='';jPrice.value='';jThought.value='';jCustomValue.value='';save();render()}
+function jailAction(id,type){const x=state.jail.find(i=>i.id===id);if(!x)return;if(type==='pass'){x.status='passed';x.closedAt=Date.now();addRecord({type:'saved',name:x.name,amount:x.price,note:'수감 후 석방 포기'})}else if(type==='buy'){x.status='bought';x.closedAt=Date.now();addRecord({type:'spent',name:x.name,amount:x.price,note:x.thought||'수감 후 결제',rating:null})}else if(type==='delete'){if(confirm('이 기록을 삭제할까요?'))state.jail=state.jail.filter(i=>i.id!==id)}save();render()}
+function selfReport(){const name=sName.value.trim(),price=num(sPrice.value);if(!name||price<=0)return alert('항목과 실제 결제액을 입력해 주세요.');addRecord({type:'spent',name,amount:price,note:sThought.value.trim()||'자수',rating:null});sName.value='';sPrice.value='';sThought.value='';save();render()}
+function startBrake(){const name=bName.value.trim(),price=num(bPrice.value);if(!name||price<=0)return alert('상품명과 가격을 입력해 주세요.');currentBrake={name,price,purpose:bPurpose.value,thought:bThought.value.trim()};brakeBox.style.display='block';brakeChoices.style.display='none';let left=10;brakeTimer.textContent='10초';brakeProgress.style.width='0%';clearInterval(brakeInterval);brakeInterval=setInterval(()=>{left--;brakeTimer.textContent=left>0?left+'초':'판단 가능';brakeProgress.style.width=((10-left)/10*100)+'%';if(left<=0){clearInterval(brakeInterval);brakeChoices.style.display='grid'}},1000)}
+function brakeStop(){if(!currentBrake)return;addRecord({type:'saved',name:currentBrake.name,amount:currentBrake.price,note:'브레이크 후 중단 · '+currentBrake.purpose+(currentBrake.thought?' · '+currentBrake.thought:'')});clearBrake();save();render();go('records')}
+function brakeBuy(){if(!currentBrake)return;addRecord({type:'spent',name:currentBrake.name,amount:currentBrake.price,note:'브레이크 후 결제'+(currentBrake.thought?' · '+currentBrake.thought:''),rating:null});clearBrake();save();render();go('records')}
+function clearBrake(){currentBrake=null;brakeBox.style.display='none';brakeChoices.style.display='none';bName.value='';bPrice.value='';bThought.value=''}
+function partialDefense(){const wanted=num(pWanted.value),actual=num(pActual.value);if(wanted<=0||actual<0||actual>=wanted)return alert('원래 금액보다 실제 결제액이 적어야 합니다.');const saved=wanted-actual;addRecord({type:'partial',name:'부분 방어',amount:saved,spent:actual,wanted,note:pMemo.value.trim()});pWanted.value='';pActual.value='';pMemo.value='';save();render();go('records')}
+function setRating(id,val){const r=state.records.find(x=>x.id===id);if(!r)return;r.rating=Number(val);save();render()}
+function deleteRecord(id){if(!confirm('기록을 삭제할까요?'))return;state.records=state.records.filter(r=>r.id!==id);save();render()}
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='moneydeath_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function importData(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!d.settings||!Array.isArray(d.jail)||!Array.isArray(d.records))throw new Error();state=d;save();render();alert('백업을 불러왔습니다.')}catch(err){alert('머니데스 백업 파일을 확인해 주세요.')}};reader.readAsText(f);e.target.value=''}
+function resetAll(){if(!confirm('머니데스의 모든 로컬 데이터를 삭제할까요?'))return;state=defaultState();save();render()}
+function render(){const s=state.settings||defaultState().settings;const free=Math.max(0,num(s.total)-num(s.protected)-num(s.reserved));homeTotal.textContent=won(s.total);homeProtected.textContent=won(s.protected);homeReserved.textContent=won(s.reserved);homeFree.textContent=won(free);setTotal.value=s.total||'';setProtected.value=s.protected||'';setReserved.value=s.reserved||'';let saved=0,spent=0;state.records.forEach(r=>{if(r.type==='saved'||r.type==='partial')saved+=num(r.amount);if(r.type==='spent')spent+=num(r.amount);if(r.type==='partial')spent+=num(r.spent)});homeSaved.textContent=recSaved.textContent=won(saved);homeSpent.textContent=recSpent.textContent=won(spent);renderJail();renderRecords()}
+function renderJail(){const active=state.jail.filter(x=>x.status==='detained');jailList.innerHTML=active.length?'':'<div class="empty">현재 수감 중인 항목이 없습니다.</div>';active.forEach(x=>{const left=x.releaseAt-Date.now(),ready=left<=0,sec=Math.max(0,Math.floor(left/1000)),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60,timer=ready?'재판단 가능':`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} 남음`;const div=document.createElement('div');div.className='card';div.innerHTML=`<div class="cardTop"><div><div class="name">${esc(x.name)}</div><div class="meta"><span class="badge">${esc(x.purpose)}</span><span class="badge">${jailDurationLabel(x.hours)}</span></div></div><div class="price">${won(x.price)}</div></div><div class="timer">${timer}</div>${x.thought?`<div class="thought"><b>결제 직전 생각</b><br>${esc(x.thought)}</div>`:''}<div class="actions"><button onclick="jailAction('${x.id}','pass')">석방 포기</button><button onclick="jailAction('${x.id}','buy')">샀음</button><button onclick="jailAction('${x.id}','delete')">삭제</button></div>`;jailList.appendChild(div)})}
+function renderRecords(){if(!state.records.length){recordList.innerHTML='<div class="empty">아직 기록이 없습니다.</div>';return}recordList.innerHTML='';state.records.forEach(r=>{const div=document.createElement('div');div.className='card';let title='',amount='',badge='';if(r.type==='saved'){title=r.name;amount='+'+won(r.amount);badge='방어'}else if(r.type==='spent'){title=r.name;amount='-'+won(r.amount);badge='결제'}else{title=r.name;amount='+'+won(r.amount)+' 방어';badge='부분 방어'}div.innerHTML=`<div class="cardTop"><div><div class="name">${esc(title)}</div><div class="meta"><span class="badge">${badge}</span><span class="badge">${new Date(r.at).toLocaleString('ko-KR')}</span></div></div><div class="price">${amount}</div></div>${r.type==='partial'?`<div class="thought">원래 ${won(r.wanted)} → 실제 ${won(r.spent)} · 지킨 돈 ${won(r.amount)}</div>`:''}${r.note?`<div class="thought">${esc(r.note)}</div>`:''}${r.type==='spent'?`<div class="thought"><b>돈값 만족도</b><div class="rangeRow"><input type="range" min="0" max="100" value="${r.rating??50}" onchange="setRating('${r.id}',this.value)"><b>${r.rating??'—'}</b></div><div class="small">0 후회 · 50 보통 · 100 매우 만족</div></div>`:''}<div style="margin-top:8px"><button class="btn ghost" onclick="deleteRecord('${r.id}')">기록 삭제</button></div>`;recordList.appendChild(div)})}
+render();setInterval(()=>{if(document.getElementById('jail').classList.contains('active'))renderJail()},1000);
 </script>
-</body>
-</html>
+</body></html>
