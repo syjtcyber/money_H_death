@@ -56,8 +56,6 @@ details[open]>summary.jailSummary{margin-bottom:12px}
 <div class="panel"><h2>백업</h2><div class="btns"><button class="btn ghost" onclick="exportData()">JSON 내보내기</button><button class="btn ghost" onclick="importFile.click()">JSON 불러오기</button></div><input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)"><div class="small" style="margin-top:10px">데이터는 이 브라우저의 localStorage에만 저장됩니다.</div></div>
 <div class="panel"><h2>초기화</h2><button class="btn danger" onclick="resetAll()">모든 데이터 삭제</button></div></section>
 
-<section id="more" class="page"><div class="panel"><h2>자수 / 부분 방어</h2><div class="small">v0.1.1 기록과 호환됩니다. 기존 데이터는 그대로 유지됩니다.</div>
-<div class="field"><label>이미 산 항목</label><input id="sName"></div><div class="field"><label>실제 결제액</label><input id="sPrice" inputmode="numeric"></div><button class="btn" onclick="selfReport()">자수 기록</button></div></section>
 </div>
 
 <nav class="tabs"><div><button class="tab on" data-p="home" onclick="go('home')">홈</button><button class="tab" data-p="jail" onclick="go('jail')">장감옥</button><button class="tab" data-p="brake" onclick="go('brake')">브레이크</button><button class="tab" data-p="records" onclick="go('records')">기록</button><button class="tab" data-p="settings" onclick="go('settings')">설정</button></div></nav>
@@ -83,7 +81,21 @@ function brakeBuy(){if(!currentBrake)return;addRecord({type:'spent',name:current
 function clearBrake(){currentBrake=null;brakeBox.style.display='none';brakeChoices.style.display='none';bName.value='';bPrice.value='';bThought.value=''}
 function partialDefense(){let wanted=num(pWanted.value),actual=num(pActual.value);if(wanted<=0||actual<0||actual>=wanted)return alert('원래 금액보다 실제 결제액이 적어야 합니다.');let saved=wanted-actual;addRecord({type:'partial',name:'부분 방어',amount:saved,spent:actual,wanted,note:pMemo.value.trim()});pWanted.value='';pActual.value='';pMemo.value='';save();render();go('records')}
 
-function selfReport(){let name=sName.value.trim(),price=num(sPrice.value);if(!name||price<=0)return alert('항목과 실제 결제액을 입력해 주세요.');addRecord({type:'spent',name,amount:price,note:sThought.value.trim()||'자수',rating:null});sName.value='';sPrice.value='';sThought.value='';save();render()}
+function selfReport(){
+  const nameEl=document.getElementById('sName');
+  const priceEl=document.getElementById('sPrice');
+  const thoughtEl=document.getElementById('sThought');
+  const name=nameEl?.value.trim()||'';
+  const price=num(priceEl?.value||'');
+  if(!name||price<=0)return alert('항목과 실제 결제액을 입력해 주세요.');
+  addRecord({type:'spent',name,amount:price,note:(thoughtEl?.value.trim()||'자수'),rating:null});
+  nameEl.value='';
+  priceEl.value='';
+  if(thoughtEl) thoughtEl.value='';
+  save();
+  render();
+  go('records');
+}
 function setRating(id,v){let r=state.records.find(x=>x.id===id);if(r){r.rating=num(v);save();renderRecords()}}
 function deleteRecord(id){if(confirm('기록을 삭제할까요?')){state.records=state.records.filter(x=>x.id!==id);save();render()}}
 function resetAll(){if(!confirm('머니데스의 모든 로컬 데이터를 삭제할까요?'))return;state=def();save();render()}
