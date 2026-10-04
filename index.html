@@ -52,6 +52,7 @@
 
   <section id="settingsView" class="view">
     <section class="panel"><h2>기준 금액</h2><div class="field"><label for="balance">현재 보유금 (수감자 온도 계산 기준)</label><input id="balance" inputmode="numeric"></div><button class="primary full" id="saveBalance">저장</button></section>
+    <section class="panel"><h2>수감 종료 알림</h2><p class="sub">머니데스 탭이 열려 있으면 수감 시간이 끝날 때 PC 화면에 알림을 띄워요. 창은 최소화되어 있어도 괜찮아요.</p><div class="summary" id="noticeStatus"></div><button class="ghost full" id="enableNotice">브라우저 알림 허용</button></section>
     <section class="panel"><h2>전체 기록</h2><label class="checkline"><input type="checkbox" id="showAll"> 월 구분 없이 전체 누적 보기</label><div id="allTotals" class="totalbox hidden"></div></section>
     <section class="panel"><h2>데이터</h2><div class="actions"><button class="ghost" id="exportData">JSON 백업</button><button class="ghost" id="importData">백업 불러오기</button><button class="danger" id="resetData">전체 초기화</button></div><input class="hidden" type="file" id="importFile" accept="application/json,.json"></section>
   </section>
@@ -66,6 +67,7 @@
 <script>
 (()=>{'use strict';
 const KEY='moneydeath_v01';
+const NOTICE_KEY='moneydeath_v01_notices';
 const FACTORS=['성장 욕구','한정/FOMO','기분전환','심심함','스트레스/화','수집욕','보상받고 싶음','기타'];
 const EMOTIONS=['초조함','신남','답답함','허무함','화남','외로움','기타'];
 const $=id=>document.getElementById(id), money=n=>(Number(n)||0).toLocaleString('ko-KR')+'원';
@@ -94,7 +96,7 @@ function dateText(v){return new Intl.DateTimeFormat('ko-KR',{dateStyle:'medium',
 function render(){
   $('monthLabel').textContent=`${selected.getFullYear()}년 ${selected.getMonth()+1}월`;$('nextMonth').disabled=selected>=new Date(new Date().getFullYear(),new Date().getMonth(),1);
   const list=monthRecords(),t=totals(list);$('keptTotal').textContent=money(t.kept);$('spentTotal').textContent=money(t.spent);$('partialTotal').textContent=money(t.partial);$('confessCount').textContent=t.confess+'건';
-  renderRecords(list);renderJails();$('balance').value=state.balance||'';renderAll();save();
+  renderRecords(list);renderJails();$('balance').value=state.balance||'';renderAll();renderNoticeStatus();save();
 }
 function renderRecords(list){
   const kept=list.filter(r=>r.type==='kept'),spent=list.filter(r=>r.type==='spent');
@@ -108,6 +110,18 @@ function renderJails(){
   $('jailList').innerHTML=state.jails.length?state.jails.slice().sort((a,b)=>new Date(a.releaseAt)-new Date(b.releaseAt)).map(j=>{const pct=state.balance>0?j.price/state.balance*100:0;const label=pct>=20?'과열':pct>=10?'뜨거움':pct>=5?'미지근함':'차가움';const remain=new Date(j.releaseAt)-Date.now();return`<article class="prisoner"><div class="row"><div><b>${esc(j.name)}</b><div class="meta">${remain>0?'석방까지 '+Math.ceil(remain/36e5)+'시간':'판단할 시간이 되었어요'}</div></div><span class="amount">${money(j.price)}</span></div><div class="summary">온도 ${pct.toFixed(1)}% · ${label}</div><div class="temp"><i style="width:${Math.min(pct*4,100)}%"></i></div>${j.memo?`<p class="note"><span class="badge">최초 메모</span>${esc(j.memo)}</p>`:''}${j.comment?`<p class="note"><span class="badge">추가 코멘트</span>${esc(j.comment)}</p>`:''}<div class="actions"><button class="ghost" data-jail="comment" data-id="${j.id}">코멘트</button><button class="ghost" data-jail="keep" data-id="${j.id}">구매 포기</button><button class="ghost" data-jail="extend" data-id="${j.id}">수감 연장</button><button class="danger" data-jail="buy" data-id="${j.id}">샀다</button><button class="danger" data-jail="delete" data-id="${j.id}">기록 삭제</button></div></article>`}).join(''):'<div class="empty">수감 중인 항목이 없어요.</div>';
 }
 function renderAll(){const t=totals(state.records);$('allTotals').classList.toggle('hidden',!$('showAll').checked);$('allTotals').innerHTML=`<b>전체 누적</b>지킨 돈 ${money(t.kept)} · 실제 결제 ${money(t.spent)}<br>부분 방어 ${money(t.partial)} · 자수 ${t.confess}건`}
+function renderNoticeStatus(){
+  const supported=typeof Notification!=='undefined';
+  const status=!supported?'이 브라우저에서는 알림을 지원하지 않아요.':Notification.permission==='granted'?'알림이 켜져 있어요.':Notification.permission==='denied'?'알림이 차단되어 있어요. 브라우저의 사이트 권한에서 허용해 주세요.':'아직 알림 권한을 선택하지 않았어요.';
+  $('noticeStatus').textContent=status;$('enableNotice').disabled=!supported||Notification.permission==='granted';$('enableNotice').textContent=Notification.permission==='granted'?'알림 허용됨':'브라우저 알림 허용';
+}
+function noticeLog(){try{return JSON.parse(localStorage.getItem(NOTICE_KEY)||'{}')}catch(e){return{}}}
+function checkDueNotices(){
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+  const log=noticeLog(),now=Date.now();let changed=false;
+  state.jails.forEach(j=>{if(new Date(j.releaseAt).getTime()>now||log[j.id]===j.releaseAt)return;log[j.id]=j.releaseAt;changed=true;const n=new Notification('머니데스 · 다시 볼 시간',{body:`${j.name} · ${money(j.price)}\n지금 마음이 어떤지 다시 살펴봐요.`,tag:`moneydeath-${j.id}-${j.releaseAt}`,renotify:false});n.onclick=()=>{window.focus();nav('jailView');n.close()}});
+  if(changed)localStorage.setItem(NOTICE_KEY,JSON.stringify(log));
+}
 function addRecord(data){state.records.push({id:uid(),at:new Date().toISOString(),memo:'',factors:[],emotions:[],...data});render()}
 function openPayment(draft){paymentDraft=draft;$('paymentContext').textContent=`${draft.name} · ${money(draft.amount)} — 판단하지 않고 당시의 흐름만 남겨요.`;$('paymentMemo').value='';document.querySelectorAll('#paymentModal .choice').forEach(b=>{b.classList.remove('selected');b.disabled=false});updateFactorCount();$('paymentModal').classList.add('open')}
 function makeChoices(id,items,multi){$(id).innerHTML=items.map(x=>`<button class="choice" type="button" data-choice="${esc(x)}" data-multi="${multi?'1':'0'}">${esc(x)}</button>`).join('')}
@@ -131,10 +145,11 @@ $('partialSave').onclick=()=>{const name=$('partialName').value.trim(),before=nu
 $('cancelPayment').onclick=closePayment;$('confirmPayment').onclick=()=>{if(!paymentDraft)return;const rec={...paymentDraft,factors:[...document.querySelectorAll('#factorChoices .selected')].map(b=>b.dataset.choice),emotions:[...document.querySelectorAll('#emotionChoices .selected')].map(b=>b.dataset.choice),memo:$('paymentMemo').value.trim()};delete rec.jailId;delete rec.clearBrake;delete rec.clearSelf;addRecord(rec);if(paymentDraft.jailId)state.jails=state.jails.filter(j=>j.id!==paymentDraft.jailId);if(paymentDraft.clearBrake)$('brakeName').value=$('brakePrice').value='';if(paymentDraft.clearSelf)$('selfName').value=$('selfPrice').value='';closePayment();render();nav('recordsView');toast('결제를 기록했어요.')};
 $('toggleKept').onclick=()=>{state.ui.keptOpen=!state.ui.keptOpen;render()};$('toggleSpent').onclick=()=>{state.ui.spentOpen=!state.ui.spentOpen;render()};$('toggleJail').onclick=()=>{state.ui.jailOpen=!state.ui.jailOpen;render()};
 $('saveBalance').onclick=()=>{state.balance=num($('balance').value);render();toast('보유금을 저장했어요.')};$('showAll').onchange=renderAll;
+$('enableNotice').onclick=async()=>{if(typeof Notification==='undefined')return toast('이 브라우저에서는 알림을 지원하지 않아요.');const result=await Notification.requestPermission();renderNoticeStatus();if(result==='granted'){toast('수감 종료 알림을 켰어요.');checkDueNotices()}else toast('알림 권한이 허용되지 않았어요.')};
 $('exportData').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download=`moneydeath-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)};
 $('importData').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{state=migrate(JSON.parse(await f.text()));render();toast('백업을 불러왔어요.')}catch(err){alert('올바른 JSON 백업 파일인지 확인해 주세요.')}e.target.value=''};
 $('resetData').onclick=()=>{if(confirm('모든 수감과 기록을 초기화할까요? 이 작업은 되돌릴 수 없습니다.')){state=defaultState();render();toast('전체 데이터를 초기화했어요.')}};
-makeChoices('factorChoices',FACTORS,true);makeChoices('emotionChoices',EMOTIONS,false);render();
+makeChoices('factorChoices',FACTORS,true);makeChoices('emotionChoices',EMOTIONS,false);render();checkDueNotices();setInterval(checkDueNotices,15000);
 window.MoneyDeath={getState:()=>JSON.parse(JSON.stringify(state)),migrate,render};
 })();
 </script>
